@@ -126,6 +126,7 @@ impl DirectoryArgument{
     }
 }
 
+#cfg[os="linux")]
 fn CreateDirectory(str name,DirectoryArgument argument)->socket::Result{
     return file::Mkdir(name,argument.mode)
 }
