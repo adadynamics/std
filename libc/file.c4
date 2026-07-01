@@ -1,0 +1,1294 @@
+use std::string as string
+use std::libc::socket as sock
+
+
+type uchar       = u8
+type short       = i16
+type ushort      = u16
+type int         = i32
+type uint        = u32
+type long        = i64
+type ulong       = u64
+type size_t      = u64
+type ssize_t     = i64
+type gid_t       = i32
+type uid_t       = i32
+type pid_t        = i32
+type id_t         = i32
+type rlim_t       = u32
+type clock_t      = i64
+type time_t       = i32
+type suseconds_t  = i32
+type key_serial_t = i32
+type off_t        = i64
+type intptr_t     = i64
+type mode_t       = i32
+type dev_t        = i32
+type ino_t        = u64
+type DIR          = void
+
+
+
+struct timespec{
+    i64 tv_sec
+    i64 tv_nsec
+}
+
+enum FileTypeMask{
+    S_IFMT = 0xf000
+}
+
+enum DirectoryFlag{
+    S_IFDIR = 0x4000
+}
+
+struct stat{
+    u64 st_dev
+    u64 st_ino
+
+    u64 st_nlink
+    u32 st_mode
+
+    u32 st_uid
+    u32 st_gid
+
+    i32 __pad0
+
+    u64 st_rdev
+    i64 st_size
+    i64 st_blksize
+    i64 st_blocks
+
+    timespec st_atim
+    timespec st_mtim
+    timespec st_ctim
+
+    i64 __glibc_reserved0
+    i64 __glibc_reserved1
+    i64 __glibc_reserved2
+}
+
+
+impl stat{
+    fn GetDevice()->u64{
+        return self->st_dev
+    }
+
+    fn GetInodeNumber()->u64{
+        return self->st_ino
+    }
+
+    fn GetMode()->u64{
+        return self->st_mode
+    }
+
+    fn IsDirectory()->u32{
+        return (self->st_mode & FileTypeMask::S_IFMT) == DirectoryFlag::S_IFDIR
+    }
+
+    fn GetLinkCount()->u64{
+        return self->st_nlink
+    }
+
+    fn GetUserID()->u64{
+        return self->st_uid
+    }
+
+    fn GetGroupID()->u64{
+        return self->st_gid
+    }
+
+    fn GetDeviceID()->u64{
+        return self->st_rdev
+    }
+
+    fn GetSize()->i64{
+        return self->st_size
+    }
+
+    fn GetBlockSize()->i64{
+        return self->st_blksize
+    }
+
+    fn GetBlockCount()->i64{
+        return self->st_blocks
+    }
+
+    fn GetAccessTime()->timespec{
+        return self->st_atim
+    }
+
+    fn GetModificationTime()->timespec{
+        return self->st_mtim
+    }
+
+    fn GetChangeTime()->timespec{
+        return self->st_ctim
+    }
+}
+
+
+
+struct Pollfd{
+    int fd        // File descriptor
+    short events  // Requested events
+    short revents // returned events
+}
+
+
+struct Iovec{
+    void *iov_base    // Starting address
+    size_t iov_len    // Size of the memory pointed to by iov_base
+}
+
+
+struct Dirent{
+    ino_t  d_ino     // Inode number
+    off_t  d_off     // Not an offset; see below
+    ushort d_reclen  // Length of this record
+    uchar  d_type    // Type of file; not supported by all filesystem types
+    char [256]d_name // Null-terminated filename
+}
+
+impl Dirent{
+    fn GetInodeNumber()->ino_t{
+        return self->d_ino
+    }
+
+
+    fn GetRecordLength()->ushort{
+        return self->d_reclen
+    }
+
+    fn GetType()->uchar{
+        return self->d_type
+    }
+
+    fn GetName()->str{
+        return self->d_name as str
+    }
+}
+
+
+foreign "C"{
+    fn open(i8 *name,i32 flags,i32 mode)->i32
+
+    fn creat(i8 *name,i32 mode)->i32
+
+    fn openat(i32 dirfd,i8 *name,i32 flags,i32 mode)->i32
+
+    fn read(i32 fd,void *buf,u64 buflen)->i64
+
+    fn write(i32 fd,void *buf,u64 buflen)->i64
+
+    fn close(i32 fd)->i32
+
+    fn stat(str pathName,stat *buffer)->i32
+
+    fn fstat(i32 fd,stat *buffer)->i32
+
+    fn lstat(i8 *name,stat *buffer)->i32
+
+    fn fstatat(i32 dirfd,i8 *name,stat *buffer,i32 flags)->i32
+
+    fn sendfile(i32 dst_fd,i32 src_fd,off_t *offset,u64 count)->i64
+
+    fn poll(Pollfd *fds,u64 fds_count,i32 timeout)->i32
+
+    //fn ppoll(Pollfd *fds,u64 fds_count,timespec *timeout,sigset_t *sigmask)->i32
+
+    fn lseek(i32 fd,off_t offset,i32 whence)->i64
+
+    fn ioctl(i32 fd,u64 operation,i8 *argp)->i32
+
+    fn pread(i32 fd,void *buf,u64 buflen,off_t offset)->i64
+
+    fn pwrite(i32 fd,void *buf,u64 buflen,off_t offset)->i64
+
+    fn readv(i32 fd,Iovec *iov,i32 iov_count)->i64
+
+    fn writev(i32 fd,Iovec *iov,i32 iov_count)->i64
+
+    fn preadv(i32 fd,Iovec *iov,i32 iov_count,off_t offset)->i64
+
+    fn pwritev(i32 fd,Iovec *iov,i32 iov_count,off_t offset)->i64
+
+    fn pipe(i32 [2]fds)->i32
+
+    fn pipe2(i32 [2]fds,i32 flags)->i32
+
+    //fn select(i32 fd_count,fd_set *read_fds,fd_set *write_fds,fd_set *except_fds,Timeval *timeout)->i32
+
+    //fn pselect(i32 fd_count,fd_set *read_fds,fd_set *write_fds,fd_set *except_fds,timespec *timeout,sigset_t *sigmask)
+
+    fn dup(i32 fd)->i32
+
+    fn dup2(i32 old_fd,i32 new_fd)->i32
+
+    fn dup3(i32 old_fd,i32 new_fd,i32 flags)->i32
+
+    fn flock(i32 fd,i32 operation)->i32
+
+    fn fsync(i32 fd)->i32
+
+    fn fdatasync(i32 fd)->i32
+
+    fn truncate(char *name,off_t size)->i32
+
+    fn ftruncate(i32 fd,off_t size)->i32
+
+    fn getcwd(char *buf,u64 size)->char *
+
+    
+    fn chdir(char *path)->i32
+
+    fn fchdir(i32 fd)->i32
+
+    fn rename(char *old_path,char *new_path)->i32
+
+    fn renameat(i32 old_dir_fd,char *old_path,i32 new_dir_fd,char *new_path)->i32
+
+    fn renameat2(i32 old_dir_fd,char *old_path,i32 new_dir_fd,char *new_path,i32 flags)->i32
+
+    fn mkdir(char *path,mode_t mode)->i32
+
+    fn mkdirat(i32 dir_fd,char *path,mode_t mode)->i32
+
+    fn rmdir(char *path)->i32
+
+    fn link(char *old_path,char *new_path)->i32
+
+    fn linkat(i32 old_dir_fd,char *old_path,i32 new_dir_fd,char *new_path,i32 flags)->i32
+
+    fn unlink(char *path)->i32
+
+    fn unlinkat(i32 dir_fd,char *path,i32 flags)->i32
+
+    fn symlink(char *target,char *link_path)->i32
+
+    fn symlinkat(char *target,i32 new_dir_fd,char *link_path)->i32
+
+    fn readlink(char *path,char *buf,u64 buf_size)->i32
+
+    fn readlinkat(i32 dir_fd,char *path,char *buf,u64 buf_size)->i32
+
+    fn chmod(char *path,mode_t mode)->i32
+
+    fn fchmod(i32 fd,mode_t mode)->i32
+
+    fn fchmodat(i32 dir_fd,char *path,mode_t mode,i32 flags)->i32
+
+    fn chown(char *path,uid_t owner,gid_t group)->i32
+
+    fn lchown(char *path,uid_t owner,gid_t group)->i32
+
+    fn fchown(i32 fd,uid_t owner,gid_t group)->i32
+
+    fn fchownat(i32 dir_fd,char *path,uid_t owner,gid_t group,i32 flags)->i32
+
+    fn umask(mode_t mask)->i32
+
+    fn mknod(char *path,mode_t mode,dev_t dev)->i32
+
+    fn mknodat(i32 dir_fd,char *path,mode_t mode,dev_t dev)->i32
+
+    //fn statfs(char *path,Statfs *buf)->i32
+
+    //fn fstatfs(i32 fd,Statfs *buf)->i32
+
+    fn vhangup()->i32
+
+    fn pivot_root(char *new_root,char *put_old)->i32
+
+    fn chroot(char *path)->i32
+
+    fn sync()->i32
+
+    fn syncfs(i32 fd)->i32
+
+    fn mount(char *source,char *target,char *fs_type,ulong mount_flags,void *data)->i32
+
+    fn umount(char *target)->i32
+
+    fn umount2(char *target,i32 flags)->i32
+
+    fn ioperm(ulong from,ulong num,i32 turn_on)->i32
+
+    fn readahead(i32 fd,off_t offset,u64 count)->i32
+
+    fn setxattr(char *path,char *name,void *value,u64 size,i32 flags)->i32
+
+    fn lsetxattr(char *path,char *name,void *value,u64 size,i32 flags)->i32
+
+    fn fsetxattr(i32 fd,char *name,void *value,u64 size,i32 flags)->i32
+
+    fn getxattr(char *path,char *name,void *value,u64 size)->i32
+
+    fn lgetxattr(char *path,char *name,void *value,u64 size)->i32
+
+    fn fgetxattr(i32 fd,char *name,void *value,u64 size)->i32
+
+    fn listxattr(char *path,char *list,u64 size)->i32
+
+    fn llistxattr(char *path,char *list,u64 size)->i32
+
+    fn flistxattr(i32 fd,char *list,u64 size)->i32
+
+    fn removexattr(char *path,char *name)->i32
+
+    fn lremovexattr(char *path,char *name)->i32
+
+    fn fremovexattr(i32 fd,char *name)->i32
+
+    //fn ioprio_set(i32 which,i32 who,i32 priority)->i32
+
+    //fn ioprio_get(i32 which,i32 who)->i32
+
+    fn inotify_init()->i32
+
+    fn inotify_init1(i32 flags)->i32
+
+    fn inotify_add_watch(i32 fd,char *path,uint mask)->i32
+
+    fn inotify_rm_watch(i32 fd,i32 wd)->i32
+
+    fn access(char *path,i32 mode)->i32
+
+    fn faccessat(i32 dir_fd,char *path,i32 mode,i32 flags)->i32
+
+    //fn faccessat2(i32 dir_fd,char *path,i32 mode,i32 flags)->i32
+
+    //fn quotactl(i32 op,char *special,i32 id,caddr_t addr)->i32
+
+    //fn io_setup(u32 nr_events,aio_context_t *ctx_id)->i32
+
+    //fn io_destroy(aio_context_t ctx_id)->i32
+
+    //fn io_getevents(aio_context_t ctx_id,long min_nr,long nr,IoEvent *events,timespec *timeout)->i32
+
+    //fn io_submit(aio_context_t ctx_id,long nr,Iocb **iocb)->i32
+
+    //fn io_cancel(aio_context_t ctx_id,Iocb *iocb,IoEvent *result)->i32
+
+    //fn lookup_dcookie(u64 cookie,char *buffer,u64 len)->i32
+
+    //fn epoll_create(i32 size)->i32
+
+    //fn epoll_create1(i32 flags)->i32
+
+    //fn epoll_wait(i32 epfd,EpollEvent *events,i32 max_events,i32 timeout)->i32
+
+    //fn epoll_pwait(i32 epfd,EpollEvent *events,i32 max_events,i32 timeout,sigset_t *signal_mask)->i32
+
+    //fn epoll_pwait2(i32 epfd,EpollEvent *events,i32 max_events,timespec * timeout,sigset_t *signal_mask)->i32
+
+    //fn epoll_ctl(i32 epfd,i32 op,i32 fd,EpollEvent *event)->i32
+
+    //fn splice(i32 fd_in,off_t *offset_in,i32 fd_out,off_t *offset_out,u64 len,u32 flags)->i32
+
+    //fn tee(i32 fd_in,i32 fd_out,u64 len,u32 flags)->i32
+
+    //fn posix_fadvise64(i32 fd,off_t offset,off_t len,i32 advice)->i32
+
+    //fn utime(char *path,UtimBuf *times)->i32
+
+    //fn utimes(char *path,Timeval *times)->i32
+
+    //fn utimensat(i32 dir_fd,char *path,timespec *times,i32 flags)->i32
+
+    //fn futimens(i32 fd,timespec *times)->i32
+
+    //fn sync_file_range(i32 fd,off_t offset,off_t count,u32 flags)->i32
+
+    //fn fallocate(i32 fd,i32 mode,off_t offset,off_t len)->i32
+
+    //fn fanotify_init(u32 flags,u32 event_f_flags)->i32
+
+    //fn fanotify_mark(i32 fd,u32 flags,u64 mask,i32 dir_fd,char *path)->i32
+
+    //fn name_to_handle_at(i32 dir_fd,char *path,FileHandle *handle,i32 *mount_id,i32 flags)->i32
+
+    //fn open_by_handle_at(i32 mount_fd,FileHandle *handle,i32 flags)->i32
+
+    //fn copy_file_range(i32 fd_in,off_t *offset_in,i32 fd_out,off_t *offset_out,u64 len,u32 flags)->i32
+
+    //fn statx(i32 dir_fd,char *path,i32 flags,u32 mask,Statx *statxbuf)->i32
+
+    //fn close_range(u32 first,u32 last,i32 flags)->i32
+
+    //fn mount_setattr(i32 dir_fd,char *path,u32 flags,MountAttr *attr,u64 size)->i32
+
+    fn mkfifo(char *name,mode_t mode)->i32
+
+    fn mkfifoat(i32 dir_fd,char *name,mode_t mode)->i32
+
+    fn opendir(str name)->Dirent *
+
+    //fn fdopendir(Dir *fd)->Dirent *
+
+    fn readdir(DIR *dir_ptr)->DIR *
+
+    //fn rewinddir(DIR *dir_ptr)->void
+
+    fn closedir(DIR *dir_ptr)->i32
+
+    //fn dir_fd(DIR *dir_ptr)->i32
+
+}
+
+
+enum OpenFlag{
+    O_RDONLY = 0
+    O_WRONLY = 1
+    O_CREAT  = 64
+    O_TRUNC  = 512
+}
+
+
+fn Open(i8 *name,i32 flags,i32 mode)->sock::Result{
+    i64 result = open(name,flags,mode)
+
+    if result < 0{
+        return sock::Result::Err("Open Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Creat(i8 *name,i32 mode)->sock::Result{
+    i64 result = creat(name,mode)
+
+    if result < 0{
+        return sock::Result::Err("Creat Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Openat(i32 dirfd,i8 *name,i32 flags,i32 mode)->sock::Result{
+    i64 result = openat(dirfd,name,flags,mode)
+
+    if result < 0{
+        return sock::Result::Err("OpenAt Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Read(i32 fd,void *buf,u64 buflen)->sock::Result{
+    i64 result = read(fd,buf,buflen)
+
+    if result < 0{
+        return sock::Result::Err("Read failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Write(i32 fd,void *buf,u64 buflen)->sock::Result{
+    i64 result = write(fd,buf,buflen)
+
+    if result < 0{
+        return sock::Result::Err("Write Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Close(i32 fd)->sock::Result{
+    i64 result = close(fd)
+
+    if result < 0{
+        return sock::Result::Err("Close Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Stat(str pathName,stat *buffer)->sock::Result{
+    i64 result = stat(pathName,buffer)
+
+    if result < 0{
+        return sock::Result::Err("Stat Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+
+fn Dup(i32 fd)->sock::Result{
+    i64 result = dup(fd)
+
+    if result < 0{
+        return sock::Result::Err("Dup Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Dup2(i32 old_fd,i32 new_fd)->sock::Result{
+    i64 result = dup2(old_fd,new_fd)
+
+    if result < 0{
+        return sock::Result::Err("Dup2 Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+fn Dup3(i32 old_fd,i32 new_fd,i32 flags)->sock::Result{
+    i64 result = dup3(old_fd,new_fd,flags)
+
+    if result < 0{
+        return sock::Result::Err("Dup3 Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Flock(i32 fd,i32 operation)->sock::Result{
+    i64 result = flock(fd,operation)
+
+    if result < 0{
+        return sock::Result::Err("Flock Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Fsync(i32 fd)->sock::Result{
+    i64 result = fsync(fd)
+
+    if result < 0{
+        return sock::Result::Err("Fsync Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+fn Fdatasync(i32 fd)->sock::Result{
+    i64 result = fdatasync(fd)
+
+    if result < 0{
+        return sock::Result::Err("Fdatasync Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+fn Truncate(char *name,off_t size)->sock::Result{
+    i64 result = truncate(name,size)
+
+    if result < 0{
+        return sock::Result::Err("Truncate Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Ftruncate(i32 fd,off_t size)->sock::Result{
+    i64 result = ftruncate(fd,size)
+
+    if result < 0{
+        return sock::Result::Err("Ftruncate Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Getcwd(char *buf,u64 size)->sock::Result{
+    char *result = getcwd(buf,size)
+
+    if result == null{
+        return sock::Result::Err("Getcwd Failed")
+    }
+
+    return sock::Result::Err(result)
+}
+
+
+
+fn Chdir(char *path)->sock::Result{
+    i64 result = chdir(path)
+
+    if result < 0{
+        return sock::Result::Err("Chdir Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Fchdir(i32 fd)->sock::Result{
+    i64 result = fchdir(fd)
+
+    if result < 0{
+        return sock::Result::Err("Fchdir Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Rename(char *old_path,char *new_path)->sock::Result{
+    i64 result = rename(old_path,new_path)
+
+    if result < 0{
+        return sock::Result::Err("Rename Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Renameat(i32 old_dir_fd,char *old_path,i32 new_dir_fd,char *new_path)->sock::Result{
+    i64 result = renameat(old_dir_fd,old_path,new_dir_fd,new_path)
+
+    if result < 0{
+        return sock::Result::Err("RenameAt Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Renameat2(i32 old_dir_fd,char *old_path,i32 new_dir_fd,char *new_path,i32 flags)->sock::Result{
+    i64 result = renameat2(old_dir_fd,old_path,new_dir_fd,new_path,flags)
+
+    if result < 0{
+        return sock::Result::Err("RenameAt2 Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Mkdir(char *path,mode_t mode)->sock::Result{
+    i64 result = mkdir(path,mode)
+
+    if result < 0{
+        return sock::Result::Err("Mkdir Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Mkdirat(i32 dir_fd,char *path,mode_t mode)->sock::Result{
+    i64 result = mkdirat(dir_fd,path,mode)
+
+    if result < 0{
+        return sock::Result::Err("MkdirAt Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Rmdir(char *path)->sock::Result{
+    i64 result = rmdir(path)
+
+    if result < 0{
+        return sock::Result::Err("Rmdir Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Link(char *old_path,char *new_path)->sock::Result{
+    i64 result = link(old_path,new_path)
+
+    if result < 0{
+        return sock::Result::Err("Link Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Linkat(i32 old_dir_fd,char *old_path,i32 new_dir_fd,char *new_path,i32 flags)->sock::Result{
+    i64 result = linkat(old_dir_fd,old_path,new_dir_fd,new_path,flags)
+
+    if result < 0{
+        return sock::Result::Err("LinkAt Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Unlink(char *path)->sock::Result{
+    i64 result = unlink(path)
+
+    if result < 0{
+        return sock::Result::Err("Unlink Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Unlinkat(i32 dir_fd,char *path,i32 flags)->sock::Result{
+    i64 result = unlinkat(dir_fd,path,flags)
+
+    if result < 0{
+        return sock::Result::Err("UnlinkAt Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Symlink(char *target,char *link_path)->sock::Result{
+    i64 result = symlink(target,link_path)
+
+    if result < 0{
+        return sock::Result::Err("Symlink Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Symlinkat(char *target,i32 new_dir_fd,char *link_path)->sock::Result{
+    i64 result = symlinkat(target,new_dir_fd,link_path)
+
+    if result < 0{
+        return sock::Result::Err("SymlinkAt Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Readlink(char *path,char *buf,u64 buf_size)->sock::Result{
+    i64 result = readlink(path,buf,buf_size)
+
+    if result < 0{
+        return sock::Result::Err("Readlink Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Readlinkat(i32 dir_fd,char *path,char *buf,u64 buf_size)->sock::Result{
+    i64 result = readlinkat(dir_fd,path,buf,buf_size)
+
+    if result < 0{
+        return sock::Result::Err("ReadlinkAt Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Chmod(char *path,mode_t mode)->sock::Result{
+    i64 result = chmod(path,mode)
+
+    if result < 0{
+        return sock::Result::Err("Chmod Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Fchmod(i32 fd,mode_t mode)->sock::Result{
+    i64 result = fchmod(fd,mode)
+
+    if result < 0{
+        return sock::Result::Err("Fchmod Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Fchmodat(i32 dir_fd,char *path,mode_t mode,i32 flags)->sock::Result{
+    i64 result = fchmodat(dir_fd,path,mode,flags)
+
+    if result < 0{
+        return sock::Result::Err("FchmodAt Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+fn Chown(char *path,uid_t owner,gid_t group)->sock::Result{
+    i64 result = chown(path,owner,group)
+
+    if result < 0{
+        return sock::Result::Err("Chown Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Lchown(char *path,uid_t owner,gid_t group)->sock::Result{
+    i64 result = lchown(path,owner,group)
+
+    if result < 0{
+        return sock::Result::Err("Lchown Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Fchown(i32 fd,uid_t owner,gid_t group)->sock::Result{
+    i64 result = fchown(fd,owner,group)
+
+    if result < 0{
+        return sock::Result::Err("Fchown Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Fchownat(i32 dir_fd,char *path,uid_t owner,gid_t group,i32 flags)->sock::Result{
+    i64 result = fchownat(dir_fd,path,owner,group,flags)
+
+    if result < 0{
+        return sock::Result::Err("FchownAt Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Umask(mode_t mask)->sock::Result{
+    i64 result = umask(mask)
+
+    if result < 0{
+        return sock::Result::Err("Umask Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Mknod(char *path,mode_t mode,dev_t dev)->sock::Result{
+    i64 result = mknod(path,mode,dev)
+
+    if result < 0{
+        return sock::Result::Err("Mknod Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Mknodat(i32 dir_fd,char *path,mode_t mode,dev_t dev)->sock::Result{
+    i64 result = mknodat(dir_fd,path,mode,dev)
+
+    if result < 0{
+        return sock::Result::Err("Mknodat Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+fn Vhangup()->sock::Result{
+    i64 result = vhangup()
+
+    if result < 0{
+        return sock::Result::Err("Vhangup Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn PivotRoot(char *new_root,char *put_old)->sock::Result{
+    i64 result = pivot_root(new_root,put_old)
+
+    if result < 0{
+        return sock::Result::Err("PivotRoot Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Chroot(char *path)->sock::Result{
+    i64 result = chroot(path)
+
+    if result < 0{
+        return sock::Result::Err("Chroot Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+fn Sync()->sock::Result{
+    i64 result = sync()
+
+    if result < 0{
+        return sock::Result::Err("Sync Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Syncfs(i32 fd)->sock::Result{
+    i64 result = syncfs(fd)
+
+    if result < 0{
+        return sock::Result::Err("Syncfs Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+fn Mount(char *source,char *target,char *fs_type,ulong mount_flags,void *data)->sock::Result{
+    i64 result = mount(source,target,fs_type,mount_flags,data)
+
+    if result < 0{
+        return sock::Result::Err("Mount Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Umount(char *target)->sock::Result{
+    i64 result = umount(target)
+
+    if result < 0{
+        return sock::Result::Err("Umount Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Umount2(char *target,i32 flags)->sock::Result{
+    i64 result = umount2(target,flags)
+
+    if result < 0{
+        return sock::Result::Err("Umount2 Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Ioperm(ulong from,ulong num,i32 turn_on)->sock::Result{
+    i64 result = ioperm(from,num,turn_on)
+
+    if result < 0{
+        return sock::Result::Err("Ioperm Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Readahead(i32 fd,off_t offset,u64 count)->sock::Result{
+    i64 result = readahead(fd,offset,count)
+
+    if result < 0{
+        return sock::Result::Err("Readahead Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Setxattr(char *path,char *name,void *value,u64 size,i32 flags)->sock::Result{
+    i64 result = setxattr(path,name,value,size,flags)
+
+    if result < 0{
+        return sock::Result::Err("Setxattr Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Lsetxattr(char *path,char *name,void *value,u64 size,i32 flags)->sock::Result{
+    i64 result = lsetxattr(path,name,value,size,flags)
+
+    if result < 0{
+        return sock::Result::Err("Lsetxattr Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Fsetxattr(i32 fd,char *name,void *value,u64 size,i32 flags)->sock::Result{
+    i64 result = fsetxattr(fd,name,value,size,flags)
+
+    if result < 0{
+        return sock::Result::Err("Fsetxattr Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Getxattr(char *path,char *name,void *value,u64 size)->sock::Result{
+    i64 result = getxattr(path,name,value,size)
+
+    if result < 0{
+        return sock::Result::Err("Getxattr Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Lgetxattr(char *path,char *name,void *value,u64 size)->sock::Result{
+    i64 result = lgetxattr(path,name,value,size)
+
+    if result < 0{
+        return sock::Result::Err("Lgetxattr Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Fgetxattr(i32 fd,char *name,void *value,u64 size)->sock::Result{
+    i64 result = fgetxattr(fd,name,value,size)
+
+    if result < 0{
+        return sock::Result::Err("Fgetxattr Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Listxattr(char *path,char *list,u64 size)->sock::Result{
+    i64 result = listxattr(path,list,size)
+
+    if result < 0{
+        return sock::Result::Err("Listxattr Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Llistxattr(char *path,char *list,u64 size)->sock::Result{
+    i64 result = llistxattr(path,list,size)
+
+    if result < 0{
+        return sock::Result::Err("Llistxattr Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Flistxattr(i32 fd,char *list,u64 size)->sock::Result{
+    i64 result = flistxattr(fd,list,size)
+
+    if result < 0{
+        return sock::Result::Err("Flistxattr Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Removexattr(char *path,char *name)->sock::Result{
+    i64 result = removexattr(path,name)
+
+    if result < 0{
+        return sock::Result::Err("Removexattr Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Lremovexattr(char *path,char *name)->sock::Result{
+    i64 result = lremovexattr(path,name)
+
+    if result < 0{
+        return sock::Result::Err("Lremovexattr Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Fremovexattr(i32 fd,char *name)->sock::Result{
+    i64 result = fremovexattr(fd,name)
+
+    if result < 0{
+        return sock::Result::Err("Fremovexattr Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn InotifyInit()->sock::Result{
+    i64 result = inotify_init()
+
+    if result < 0{
+        return sock::Result::Err("InotifyInit Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn InotifyInit1(i32 flags)->sock::Result{
+    i64 result = inotify_init1(flags)
+
+    if result < 0{
+        return sock::Result::Err("InotifyInit1 Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn InotifyAddWatch(i32 fd,char *path,uint mask)->sock::Result{
+    i64 result = inotify_add_watch(fd,path,mask)
+
+    if result < 0{
+        return sock::Result::Err("InotifyAddWatch Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn InotifyRmWatch(i32 fd,i32 wd)->sock::Result{
+    i64 result = inotify_rm_watch(fd,wd)
+
+    if result < 0{
+        return sock::Result::Err("InotifyRmWatch Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Access(char *path,i32 mode)->sock::Result{
+    i64 result = access(path,mode)
+
+    if result < 0{
+        return sock::Result::Err("Access Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Faccessat(i32 dir_fd,char *path,i32 mode,i32 flags)->sock::Result{
+    i64 result = faccessat(dir_fd,path,mode,flags)
+
+    if result < 0{
+        return sock::Result::Err("Faccessat Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Opendir(str name)->sock::Result{
+    DIR *result = opendir(name)
+
+    return sock::Result::Err(result as str)
+}
+
+
+
+fn Readdir(DIR *handle)->sock::Result{
+    Dirent *result = readdir(handle)
+
+    return sock::Result::Err(result as str)
+}
+
+

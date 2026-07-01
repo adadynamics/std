@@ -1,0 +1,309 @@
+
+use std::libc::file   as file
+use std::libc::socket as socket
+use std::string       as string
+
+foreign "C"{
+    fn printf(str fmt,...)->i32
+}
+
+
+const u32 TRUE  = 1
+const u32 FALSE = 0
+
+fn GetFileSize(str fileName)->socket::Result{
+    socket::Result result
+    file::stat statBuffer
+
+    result = file::Stat(fileName,&statBuffer)
+
+    match result{
+        socket::Result::Err(err){
+            return result
+        }
+    }
+
+    u64 size = statBuffer.GetSize()
+
+    return socket::Result::Ok(size)
+}
+
+fn Read(str fileName)->string::String{
+    socket::Result result
+
+    string::String s
+
+
+    u64 fd   = 0
+    u64 size = 0
+
+    result = GetFileSize(fileName)
+
+    match result{
+        socket::Result::Err(err){
+            printf("%s\n",err)
+        }
+        socket::Result::Ok(ok){
+            size = ok
+        }
+    }
+
+    result = file::Open(fileName,file::OpenFlag::O_RDONLY,0)
+
+    match result{
+        socket::Result::Err(err){
+            printf("%s\n",err)
+        }
+        socket::Result::Ok(ok){
+            fd = ok
+        }
+    }
+
+    s.InitSized(size)
+    result = file::Read(fd,s.data,size)
+
+    match result{
+        socket::Result::Err(err){
+            printf("%s\n",err)
+        }
+        socket::Result::Ok(received){
+            if received == 0{
+                printf("file size = 0\n")
+            }
+        }
+    }
+
+    s.length = size
+
+    return s
+}
+
+
+fn Write(str fileName,string::String buffer)->i64{
+    socket::Result result
+
+    u64 fd = 0
+    result = file::Open(fileName,file::OpenFlag::O_WRONLY | file::OpenFlag::O_CREAT,0644)
+
+    match result{
+        socket::Result::Err(err){
+            printf("%s\n",err)
+            return -1
+        }
+        socket::Result::Ok(ok){
+            fd = ok
+        }
+    }
+
+    result = file::Write(fd,buffer.data,buffer.length)
+
+    match result{
+        socket::Result::Err(err){
+            printf("%s\n",err)
+            return -1
+        }
+        socket::Result::Ok(sent){
+            return sent
+        }
+    }
+
+    return -1
+}
+
+// Directory sub routines
+
+struct DirectoryArgument{
+    u64 mode
+}
+
+impl DirectoryArgument{
+    fn Init(u64 mode){
+        self->mode = mode
+    }
+       
+    fn GetMode()->u64{
+        return self->mode
+    }
+}
+
+fn CreateDirectory(str name,DirectoryArgument argument)->socket::Result{
+    return file::Mkdir(name,argument.mode)
+}
+
+fn CreateDirectoryRecursive(str name,DirectoryArgument argument)->socket::Result{
+    string::String tmp
+    tmp.Init()
+    tmp.PushBack(name)
+
+    u64 ii = 1
+
+    while tmp.At(ii) != 0{
+        if tmp.At(ii) == '/'{
+            tmp.Set(ii,0)
+            CreateDirectory(tmp.CString(),argument)
+            tmp.Set(ii,'/')
+        }
+
+        ii += 1
+    }
+
+    return CreateDirectory(tmp.CString(),argument)
+}
+
+
+fn RemoveDirectory(str name)->socket::Result{
+    return file::Rmdir(name)
+}
+
+
+
+fn SetCurrentDirectory(str name)->socket::Result{
+    return file::Chdir(name)
+}
+
+
+fn GetCurrentDirectory()->socket::Result{
+    const u64 PATH_MAX = 256
+    char [256]buffer
+    return file::Getcwd(buffer,PATH_MAX)
+}
+
+struct DirectoryEntry{
+    u64 inodeNumber
+    file::stat statBuffer
+    string::String name
+}
+
+impl DirectoryEntry{
+    fn Init(u64 inodeNumber,file::stat statBuffer,str name){
+        self->inodeNumber = inodeNumber
+        self->statBuffer  = statBuffer
+
+        self->name.Init()
+        self->name.PushBack(name)
+    }
+
+    fn GetName()->str{
+        return self->name.CString()
+    }
+
+    fn IsDirectory()->u32{
+        return self->statBuffer.IsDirectory()
+    }
+}
+
+
+struct DirectoryDescriptor{
+    void *handle
+    string::String name
+}
+
+
+impl DirectoryDescriptor{
+    fn Init(void *handle,str name){
+        self->handle = handle
+
+        self->name.Init()
+        self->name.PushBack(name)
+    }
+}
+
+fn FindFirstFile(str name,DirectoryEntry *buffer)->DirectoryDescriptor{
+    file::DIR *handle    = null
+    file::Dirent *dirent = null
+    socket::Result result
+    string::String string
+    file::stat statBuffer
+    DirectoryDescriptor descriptor
+
+    result = file::Opendir(name)
+
+    match result{
+        socket::Result::Err(err){
+            handle = err
+        }
+    }
+
+    result = file::Readdir(handle)
+
+    match result{
+        socket::Result::Err(err){
+            void *tmp = err
+            dirent = tmp
+        }
+    }
+
+    string.Init()
+    string.PushBack(name)
+    string.PushBack("/")
+    string.PushBack(dirent->GetName())
+
+    file::Stat(string.data,&statBuffer)
+
+    buffer->Init(dirent->GetInodeNumber(),statBuffer,dirent->GetName())
+
+    descriptor.Init(handle,name)
+
+    return descriptor
+}
+
+
+
+
+fn FindNextFile(DirectoryDescriptor descriptor,DirectoryEntry *buffer)->u32{
+    file::DIR *handle    = descriptor.handle
+    str name             = descriptor.name.CString()
+    file::Dirent *dirent = null
+    socket::Result result
+    string::String string
+    file::stat statBuffer
+
+
+    result = file::Readdir(handle)
+
+    match result{
+        socket::Result::Err(err){
+            if err == null{
+                return FALSE
+            }
+
+            void *tmp = err
+            dirent = tmp
+        }
+    }
+
+    if dirent == null{
+        return FALSE
+    }
+
+    string.Init()
+    string.PushBack(name)
+    string.PushBack("/")
+    string.PushBack(dirent->GetName())
+
+
+    result = file::Stat(string.data,&statBuffer)
+
+    match result{
+        socket::Result::Err(err){
+            return FALSE
+        }
+    }
+
+    buffer->Init(dirent->GetInodeNumber(),statBuffer,dirent->GetName())
+
+    return TRUE
+}
+
+
+fn ListDirectory(str name){
+    DirectoryEntry buffer
+    DirectoryDescriptor descriptor = FindFirstFile(name,&buffer)
+
+    printf("%s\n",buffer.GetName())
+
+    while FindNextFile(descriptor,&buffer) == TRUE{
+        printf("%s\n",buffer.GetName())
+    }
+}
+

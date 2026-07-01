@@ -1,0 +1,528 @@
+use std::libc::socket as sock
+
+type uchar       = u8
+type int         = i32
+type uint        = u32
+type long        = i64
+type ulong       = u64
+type size_t      = u64
+type ssize_t     = i64
+type gid_t       = i32
+type uid_t       = i32
+type pid_t        = i32
+type id_t         = i32
+type rlim_t       = u32
+type clock_t      = i64
+type time_t       = i32
+type suseconds_t  = i32
+type key_serial_t = i32
+type off_t        = i64
+type intptr_t     = i64
+
+struct Iovec{
+    void *iov_base    // Starting address
+    size_t iov_len    // Size of the memory pointed to by iov_base
+}
+
+enum Protection{
+    PROT_EXEC
+    PROT_READ
+    PROT_WRITE
+    PROT_NONE
+}
+
+enum  MappingFlag{
+    MAP_SHARED
+    MAP_SHARED_VALIDATE
+    MAP_PRIVATE
+    MAP_32BIT
+    MAP_ANON
+    MAP_ANONYMOUS
+    MAP_DENYWRITE
+    MAP_EXECUTABLE
+    MAP_FILE
+    MAP_FIXED
+    MAP_FIXED_NOREPLACE
+}
+
+
+foreign "C"{
+    fn brk(void *addr)->int
+
+    fn sbrk(intptr_t increment)->void *
+
+    fn madvise(void *addr,size_t length,int advice)->int
+
+    fn mincore(void *addr,size_t length,uchar *vec)->int
+
+    fn get_mempolicy(int *mode,ulong *node_mask,ulong max_node,void *addr,ulong flags)->int
+
+    fn keyctl(int operation,ulong arg2,ulong arg3,ulong arg4,ulong arg5)->int
+
+    fn membarrier(int cmd,uint flags,int cpu_id)->int
+
+    fn memfd_secret(uint flags)->int
+
+    fn userfaultfd(int flags)->int
+
+    fn mbind(void *addr,ulong length,int mode,ulong *node_mask,ulong max_node,uint flags)->int
+
+    fn memfd_create(char *name,uint flags)->int
+
+    fn migrate_pages(int pid,ulong max_node,ulong *old_nodes,ulong *new_nodes)->int
+
+    fn mlock2(void *addr,size_t length,uint flags)->int
+
+    fn mremap(void *old_address,size_t old_size,size_t new_size,int flags,void *new_address)->void *
+
+    fn move_pages(int pid,ulong count,void **pages,int *nodes,int *status,int flags)->int
+
+    fn request_key(char *_type,char *description,char *callout_info,key_serial_t dest_keyring)->int
+
+    fn pkey_alloc(uint flags,uint access_rights)->int
+
+    fn pkey_free(int pkey)->int
+
+    fn pkey_mprotect(void *addr,size_t length,int protection,int pkey)->int
+
+    fn set_mempolicy(int mode,ulong *node_mask,ulong max_node)->int
+
+    fn swapoff(char *path)->int
+
+    fn swapon(char *path,int swapflags)->int
+
+    fn vmsplice(int fd,Iovec *iov,size_t nr_segs,uint flags)->int
+
+    fn mlock(void *addr,size_t length)->int
+
+    fn mlockall(int flags)->int
+
+    fn mmap(void *addr,size_t length,int protection,int flags,int fd,off_t offset)->void *
+
+    fn mprotect(void *addr,size_t length,int protection)->int
+
+    fn msync(void *addr,size_t length,int flags)->int
+
+    fn munlock(void *addr,size_t length)->int
+
+    fn munlockall()->int
+
+    fn munmap(void *addr,size_t length)->int
+
+    fn memcpy(void *dst,const void *src,u64 count)->void *
+
+    fn memcmp(const void *dst,const void *src,u64 count)->int
+
+    fn memset(void *dst,i32 c,u64 count)->void *
+
+    fn malloc(u64 size)->void *
+
+    fn free(void *addr)
+}
+
+
+
+fn Brk(void *addr)->sock::Result{
+    i64 result = brk(addr)
+
+    if result < 0{
+        return sock::Result::Err("Brk Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Sbrk(intptr_t increment)->sock::Result{
+    void *result = sbrk(increment)
+
+    return sock::Result::Err(result as str)
+}
+
+
+
+fn Madvise(void *addr,size_t length,int advice)->sock::Result{
+    i64 result = madvise(addr,length,advice)
+
+    if result < 0{
+        return sock::Result::Err("Madvise Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Mincore(void *addr,size_t length,uchar *vec)->sock::Result{
+    i64 result = mincore(addr,length,vec)
+
+    if result < 0{
+        return sock::Result::Err("Mincore Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn GetMempolicy(int *mode,ulong *node_mask,ulong max_node,void *addr,ulong flags)->sock::Result{
+    i64 result //= get_mempolicy(mode,node_mask,max_node,addr,flags)
+
+    if result < 0{
+        return sock::Result::Err("GetMempolicy Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+fn Keyctl(int operation,ulong arg2,ulong arg3,ulong arg4,ulong arg5)->sock::Result{
+    i64 result //= keyctl(operation,arg2,arg3,arg4,arg5)
+
+    if result < 0{
+        return sock::Result::Err("Keyctl Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+fn Membarrier(int cmd,uint flags,int cpu_id)->sock::Result{
+    i64 result //= membarrier(cmd,flags,cpu_id)
+
+    if result < 0{
+        return sock::Result::Err("Membarrier Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+fn MemfdSecret(uint flags)->sock::Result{
+    i64 result //= memfd_secret(flags)
+
+    if result < 0{
+        return sock::Result::Err("MemfdSecret Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Userfaultfd(int flags)->sock::Result{
+    i64 result //= userfaultfd(flags)
+
+    if result < 0{
+        return sock::Result::Err("Userfaultfd Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Mbind(void *addr,ulong length,int mode,ulong *node_mask,ulong max_node,uint flags)->sock::Result{
+    i64 result //= mbind(addr,length,mode,node_mask,max_node,flags)
+
+    if result < 0{
+        return sock::Result::Err("Mbind Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn MemfdCreate(char *name,uint flags)->sock::Result{
+    i64 result = memfd_create(name,flags)
+
+    if result < 0{
+        return sock::Result::Err("MemfdCreate Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn MigratePages(int pid,ulong max_node,ulong *old_nodes,ulong *new_nodes)->sock::Result{
+    i64 result //= migrate_pages(pid,max_node,old_nodes,new_nodes)
+
+    if result < 0{
+        return sock::Result::Err("MigratePages Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Mlock2(void *addr,size_t length,uint flags)->sock::Result{
+    i64 result = mlock2(addr,length,flags)
+
+    if result < 0{
+        return sock::Result::Err("Mlock2 Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Mremap(void *old_address,size_t old_size,size_t new_size,int flags,void *new_address)->sock::Result{
+    void *result = mremap(old_address,old_size,new_size,flags,new_address)
+
+    return sock::Result::Err(result as str)
+}
+
+
+
+fn MovePages(int pid,ulong count,void **pages,int *nodes,int *status,int flags)->sock::Result{
+    i64 result //= move_pages(pid,count,pages,nodes,status,flags)
+
+    if result < 0{
+        return sock::Result::Err("MovePages Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn RequestKey(char *_type,char *description,char *callout_info,key_serial_t dest_keyring)->sock::Result{
+    i64 result //= request_key(_type,description,callout_info,dest_keyring)
+
+    if result < 0{
+        return sock::Result::Err("RequestKey Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn PkeyAlloc(uint flags,uint access_rights)->sock::Result{
+    i64 result = pkey_alloc(flags,access_rights)
+
+    if result < 0{
+        return sock::Result::Err("PkeyAlloc Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn PkeyFree(int pkey)->sock::Result{
+    i64 result = pkey_free(pkey)
+
+    if result < 0{
+        return sock::Result::Err("PkeyFree Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn PkeyMprotect(void *addr,size_t length,int protection,int pkey)->sock::Result{
+    i64 result = pkey_mprotect(addr,length,protection,pkey)
+
+    if result < 0{
+        return sock::Result::Err("PkeyMprotect Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn SetMempolicy(int mode,ulong *node_mask,ulong max_node)->sock::Result{
+    i64 result //= set_mempolicy(mode,node_mask,max_node)
+
+    if result < 0{
+        return sock::Result::Err("SetMempolicy Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Swapoff(char *path)->sock::Result{
+    i64 result = swapoff(path)
+
+    if result < 0{
+        return sock::Result::Err("Swapoff Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Swapon(char *path,int swapflags)->sock::Result{
+    i64 result = swapon(path,swapflags)
+
+    if result < 0{
+        return sock::Result::Err("Swapon Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Vmsplice(int fd,Iovec *iov,size_t nr_segs,uint flags)->sock::Result{
+    i64 result = vmsplice(fd,iov,nr_segs,flags)
+
+    if result < 0{
+        return sock::Result::Err("Vmsplice Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Mlock(void *addr,size_t length)->sock::Result{
+    i64 result = mlock(addr,length)
+
+    if result < 0{
+        return sock::Result::Err("Mlock Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Mlockall(int flags)->sock::Result{
+    i64 result = mlockall(flags)
+
+    if result < 0{
+        return sock::Result::Err("Mlockall Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Mmap(void *addr,size_t length,int protection,int flags,int fd,off_t offset)->sock::Result{
+    void *result = mmap(addr,length,protection,flags,fd,offset)
+
+    return sock::Result::Err(result as str)
+}
+
+
+
+fn Mprotect(void *addr,size_t length,int protection)->sock::Result{
+    i64 result = mprotect(addr,length,protection)
+
+    if result < 0{
+        return sock::Result::Err("Mprotect Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Msync(void *addr,size_t length,int flags)->sock::Result{
+    i64 result = msync(addr,length,flags)
+
+    if result < 0{
+        return sock::Result::Err("Msync Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Munlock(void *addr,size_t length)->sock::Result{
+    i64 result = munlock(addr,length)
+
+    if result < 0{
+        return sock::Result::Err("Munlock Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Munlockall()->sock::Result{
+    i64 result = munlockall()
+
+    if result < 0{
+        return sock::Result::Err("Munlockall Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Munmap(void *addr,size_t length)->sock::Result{
+    i64 result = munmap(addr,length)
+
+    if result < 0{
+        return sock::Result::Err("Munmap Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Memcpy(void *dst,void *src,u64 count)->sock::Result{
+    str result = memcpy(dst,src,count)
+
+    if result == null{
+        return sock::Result::Err("Memcpy Failed")
+    }
+
+    return sock::Result::Ok(0)
+}
+
+
+
+fn Memcmp(const void *dst,const void *src,u64 count)->sock::Result{
+    i32 result = memcmp(dst,src,count)
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Memset(void *dst,i32 c,u64 count)->sock::Result{
+    str result = memset(dst,c,count)
+
+    if result == null{
+        return sock::Result::Err("Memset Failed")
+    }
+
+    return sock::Result::Ok(0)
+}
+
+
+
+fn Malloc(u64 size)->sock::Result{
+    str result = malloc(size)
+
+    if result == null{
+        return sock::Result::Err("Malloc Failed")
+    }
+
+    return sock::Result::Err(result)
+}
+
+
+
+fn Free(void *addr)->sock::Result{
+    free(addr)
+
+    return sock::Result::Ok(0)
+}
+

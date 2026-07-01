@@ -1,0 +1,20 @@
+use std::string as string
+use std::libc::socket as sock
+
+
+
+foreign "C"{
+    fn time(i32 *buffer)->i32
+}
+
+
+
+fn Time(i32 *buffer)->sock::Result{
+    i64 result = time(buffer)
+
+    if result < 0{
+        return sock::Result::Err("Time Failed")
+    }
+
+    return sock::Result::Ok(result)
+}

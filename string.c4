@@ -1,0 +1,268 @@
+use std::libc::memory as memlib
+use std::memory::allocators::bump as allocator
+
+foreign "C"{
+    fn malloc(u64 size)->void *
+    fn printf(char *fmt,...)->i32
+    fn free(void *addr)
+    fn strlen(str string)->u64
+}
+
+
+struct String{
+    u64 hasBump
+    allocator::BumpAllocator *bump
+    u64 length
+    u64 capacity
+    char *data
+}
+
+
+impl String{
+    fn Init()->void{
+        self->hasBump  = 0
+        self->bump     = null
+        self->length   = 0
+        self->capacity = 16
+        self->data     = malloc(self->capacity)
+
+        self->data[0]  = 0
+    }
+
+    fn InitSized(u64 capacity)->void{
+        self->hasBump  = 0
+        self->bump     = null
+        self->length   = 0
+        self->capacity = capacity
+        self->data     = malloc(capacity)
+
+        self->data[0]  = 0
+    }
+
+    
+    fn InitBumped(allocator::BumpAllocator *bump)->void{
+        self->hasBump  = 1
+        self->bump     = bump
+        self->length   = 0
+        self->capacity = 16
+        self->data     = bump->AllocType(sizeof(char),self->capacity,alignof(char))
+
+        self->data[0]  = 0
+    }
+
+    fn Destroy()->void{
+        if self->data and self->hasBump{
+            free(self->data)
+            self->data     = 0
+            self->length   = 0
+            self->capacity = 0
+        }
+    }
+
+    fn Reserve(u64 newCapacity)->void{
+        if newCapacity <= self->capacity{
+            return
+        }
+
+        char *newData = null
+
+        if self->hasBump{
+            newData = self->bump->AllocType(sizeof(char),newCapacity,alignof(char))
+        }
+        else{
+            newData = malloc(newCapacity)
+        }
+
+        memlib::Memcpy(newData,self->data,self->length)
+
+        if not self->hasBump{
+            free(self->data)
+        }
+
+        self->capacity           = newCapacity
+        self->data               = newData
+        self->data[self->length] = 0
+    }
+
+    fn PushChar(char ch)->void{
+        if self->length + 1 >= self->capacity{
+            self->Reserve(self->capacity * 2)
+        }
+
+        self->data[self->length] = ch
+        self->length += 1
+
+        self->data[self->length] = 0
+    }
+
+    fn PushBack(str text)->void{
+        u64 textLength = strlen(text)
+
+        if self->length + textLength + 1 >= self->capacity{
+            u64 newCapacity = self->capacity
+
+            while self->length + textLength + 1 >= newCapacity{
+                newCapacity *= 2
+            }
+
+            self->Reserve(newCapacity)
+        }
+
+        memlib::Memcpy(self->data + self->length,text,textLength)
+
+        self->length += textLength
+
+        self->data[self->length] = 0
+    }
+
+    fn Clear()->void{
+        self->length = 0
+        self->data[0] = 0
+    }
+
+    fn CString()->str{
+        return self->data
+    }
+
+    fn At(u64 index)->char{
+        return self->data[index]
+    }
+     
+    fn Set(u64 index,char value){
+        self->data[index] = value
+    }
+
+    fn From(str text)->String{
+        String result
+        result.Init()
+
+        result.PushBack(text)
+
+        return result
+    }
+
+    fn Copy()->String{
+        String result
+        result.InitSized(self->length + 1)
+
+        memlib::Memcpy(result.data,self->data,self->length)
+
+        result.length = self->length
+        result.data[result.length] = 0
+
+        return result
+    }
+
+    fn Equals(str other)->u64{
+        u64 otherLength = strlen(other)
+
+        if self->length != otherLength{
+            return 0
+        }
+
+        u64 ii = 0
+
+        while ii < self->length{
+            if self->data[ii] != other[ii]{
+                return 0
+            }
+
+            ii += 1
+        }
+
+        return 1
+    }
+
+    fn EqualsString(String *other)->u64{
+        if self->length != other->length{
+            return 0
+        }
+
+        u64 ii = 0
+
+        while ii < self->length{
+            if self->data[ii] != other->data[ii]{
+                return 0
+            }
+
+            ii += 1
+        }
+
+        return 1
+    }
+
+    fn StartsWith(str prefix)->u64{
+        u64 prefixLength = strlen(prefix)
+
+        if prefixLength > self->length{
+            return 0
+        }
+
+        u64 ii = 0
+
+        while ii < prefixLength{
+            if self->data[ii] != prefix[ii]{
+                return 0
+            }
+
+            ii += 1
+        }
+
+        return 1
+    }
+
+    fn Slice(u64 start,u64 end)->String{
+        String result
+
+        result.Init()
+
+        if start >= self->length{
+            return result
+        }
+
+        if end > self->length{
+            end = self->length
+        }
+
+        if start >= end{
+            return result
+        }
+
+        u64 ii = start
+
+        while ii < end{
+            result.PushChar(self->data[ii])
+            ii += 1
+        }
+
+        return result
+    }
+
+    fn FindChar(char ch)->i64{
+        u64 ii = 0
+
+        while ii < self->length{
+            if self->data[ii] == ch{
+                return ii
+            }
+
+            ii += 1
+        }
+
+        return -1
+    }
+
+    fn FindCharFrom(char ch,u64 start)->i64{
+        u64 ii = start
+
+        while ii < self->length{
+            if self->data[ii] == ch{
+                return ii
+            }
+
+            ii += 1
+        }
+
+        return -1
+    }
+}

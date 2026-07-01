@@ -1,0 +1,919 @@
+use std::string as string
+use std::libc::socket as sock
+
+
+
+type int         = i32
+type uint        = u32
+type long        = i64
+type ulong       = u64
+type size_t      = u64
+type ssize_t     = i64
+type gid_t       = i32
+type uid_t       = i32
+type pid_t       = i32
+type id_t        = i32
+type rlim_t      = u32
+type clock_t     = i64
+type time_t      = i32
+type suseconds_t = i32
+
+struct Rlimit{
+    rlim_t rlim_cur  // Soft Limit
+    rlim_t rlim_max  // Hard Limit
+}
+
+
+struct Timeval{
+    time_t tv_sec       // Seconds
+    suseconds_t tv_usec // Microseconds
+}
+
+
+struct Rusage{
+    Timeval ru_utime   // User CPU time used
+    Timeval ru_stime   // System CPU time used
+    long ru_maxrss     // Maximum resident set size
+    long ru_ixrss      // Integral shared memory size
+    long ru_idrss      // Integral unshared data size
+    long ru_isrss      // Integral unshared stack size
+    long ru_minflt     // Page reclaims (soft page faults)
+    long ru_majflt     // Page faults (hard page faults)
+    long ru_nswap      // Swaps
+    long ru_inblock    // Block input operations
+    long ru_outblock   // Block output operations
+    long ru_msgsnd     // IPC messages sent
+    long ru_msgrcv     // IPC messages received
+    long ru_nsignals   // Signals received
+    long ru_nvcsw      // Voluntary context switches
+    long ru_nivcsw     // Involuntary context switches
+}
+
+struct Iovec{
+    void *iov_base    // Starting address
+    size_t iov_len    // Size of the memory pointed to by iov_base
+}
+
+struct Tms{
+    clock_t tms_utime  // User Time
+    clock_t tms_stime  // System Time
+    clock_t tms_cutime // User Time of children
+    clock_t tms_cstime // System TIme of children
+}
+
+
+foreign "C"{
+    fn execve(str pathname, str *argv,str *envp)->int
+
+    fn execveat(int dirfd,str pathname, str *argv,str *envp,int flags)->int
+
+    fn exit(int status)
+
+    fn exit_group(int status)->int
+
+    fn fork()->int
+
+    fn vfork()->int
+
+    fn getcpu(uint *cpu,uint *node)->int
+
+    fn getegid()->int
+
+    fn geteuid()->int
+
+    fn getgid()->int
+
+    fn getgroups(int size,gid_t *list)->int
+
+    fn getpgid(pid_t pid)->int
+
+    fn getpgrp()->int
+
+    fn getpid()->int
+
+    fn getppid()->int
+
+    fn getpriority(int which,id_t who)->int
+
+    fn getresgid(gid_t *rgid,gid_t *egid,gid_t *sgid)->int
+
+    fn getresuid(uid_t *ruid,uid_t *euid,uid_t *suid)->int
+    
+    fn getrlimit(int resource,Rlimit *rlim)->int
+
+    fn getrusage(int who,Rusage *usage)->int
+
+    fn getsid(pid_t pid)->int
+
+    fn gettid()->int
+
+    fn getuid()->int
+
+    fn kill(pid_t pid,int sig)->int
+
+    fn pidfd_getfd(int pidfd,int targetfd,uint flags)->int
+
+    fn pidfd_open(pid_t pid,uint flags)->int
+
+    fn prctl(int op,ulong arg2,ulong arg3,ulong arg4, ulong arg5)->int
+
+    fn prlimit(pid_t pid, int resource,Rlimit *new_limit,Rlimit *old_limit)->int
+
+    fn process_madvise(int pidfd,Iovec *iovec,size_t n,int advice,uint flags)->int
+
+    fn process_vm_readv(pid_t pid,Iovec *local_iov,ulong liovcnt,Iovec *remote_iov,ulong riovcnt,ulong flags)->i64
+
+    fn process_vm_writev(pid_t pid,Iovec *local_iov,ulong liovcnt,Iovec *remote_iov,ulong riovcnt,ulong flags)->i64
+
+    fn setgid(gid_t gid)->int
+
+    fn setgroups(size_t size,gid_t *list)->int
+
+    fn initgroups(str user,gid_t group)->int
+
+    fn setns(int fd,int nstype)->int
+
+    fn setpgid(pid_t pid, pid_t pgid)->int
+
+    fn setpriority(int which,id_t who, int prio)->int
+
+    fn setregid(gid_t rgid, gid_t egid)->int
+
+    fn setresgid(gid_t rgid,gid_t egid,gid_t sgid)->int
+
+    fn setresuid(uid_t ruid,uid_t euid,uid_t suid)->int
+
+    fn setreuid(uid_t ruid,uid_t euid)->int
+
+    fn setrlimit(int resource,Rlimit *rlim)->int
+
+    fn setsid()->int
+
+    fn set_tid_address(int *tidptr)->int
+
+    fn setuid(uid_t uid)->int
+
+    fn seteuid(uid_t uid)->int
+
+    fn setegid(gid_t gid)->int
+
+    fn tgkill(pid_t tgid,pid_t tid,int sig)->int
+
+    fn unshare(int flags)->int
+
+    fn wait(int *status)->int
+
+    fn waitpid(pid_t pid,int *status,int options)->int
+
+    fn wait4(pid_t pid,int *wstatus,int options,Rusage *rusage)->int
+
+    fn wait3(int *wstatus,int options,Rusage *rusage)->int
+
+    fn modify_ldt(int func,void *ptr,ulong bytecount)->int
+
+    fn seccomp(uint operation,uint flags,void *args)->int
+
+    fn kcmp(pid_t pid1,pid_t pid2,int _type,ulong idx1,ulong idx2)->int
+
+    fn getenv(str name)->str 
+
+    fn setenv(str name,str value,int overwrite)->int
+
+    fn unsetenv(str name)->int
+
+    fn clearenv()->int
+
+    fn times(Tms *buf)->int
+
+    fn acct(str acctfile)->int
+
+}
+
+
+
+fn Execve(str pathname,str *argv,str *envp)->sock::Result{
+    i64 result = execve(pathname,argv,envp)
+
+    if result < 0{
+        return sock::Result::Err("Execve Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Execveat(int dirfd,str pathname,str *argv,str *envp,int flags)->sock::Result{
+    i64 result = execveat(dirfd,pathname,argv,envp,flags)
+
+    if result < 0{
+        return sock::Result::Err("Execveat Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+// libc doesn't provide a wrapper for it
+fn ExitGroup(int status)->sock::Result{
+    i64 result //= exit_group(status)
+
+    if result < 0{
+        return sock::Result::Err("ExitGroup Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+fn Exit(int status)->sock::Result{
+    exit(status)
+
+    return sock::Result::Ok(0)
+}
+
+
+
+fn Fork()->sock::Result{
+    i64 result = fork()
+
+    if result < 0{
+        return sock::Result::Err("Fork Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+fn Vfork()->sock::Result{
+    i64 result = vfork()
+
+    if result < 0{
+        return sock::Result::Err("Vfork Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Getcpu(uint *cpu,uint *node)->sock::Result{
+    i64 result = getcpu(cpu,node)
+
+    if result < 0{
+        return sock::Result::Err("Getcpu Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+fn Getegid()->sock::Result{
+    i64 result = getegid()
+
+    if result < 0{
+        return sock::Result::Err("Getegid Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Geteuid()->sock::Result{
+    i64 result = geteuid()
+
+    if result < 0{
+        return sock::Result::Err("Geteuid Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+fn Getgid()->sock::Result{
+    i64 result = getgid()
+
+    if result < 0{
+        return sock::Result::Err("Getgid Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Getgroups(int size,gid_t *list)->sock::Result{
+    i64 result = getgroups(size,list)
+
+    if result < 0{
+        return sock::Result::Err("Getgroups Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Getpgid(pid_t pid)->sock::Result{
+    i64 result = getpgid(pid)
+
+    if result < 0{
+        return sock::Result::Err("Getpgid Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+fn Getpgrp()->sock::Result{
+    i64 result = getpgrp()
+
+    if result < 0{
+        return sock::Result::Err("Getpgrp Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Getpid()->sock::Result{
+    i64 result = getpid()
+
+    if result < 0{
+        return sock::Result::Err("Getpid Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+fn Getppid()->sock::Result{
+    i64 result = getppid()
+
+    if result < 0{
+        return sock::Result::Err("Getppid Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Getpriority(int which,id_t who)->sock::Result{
+    i64 result = getpriority(which,who)
+
+    if result < 0{
+        return sock::Result::Err("Getpriority Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Getresgid(gid_t *rgid,gid_t *egid,gid_t *sgid)->sock::Result{
+    i64 result = getresgid(rgid,egid,sgid)
+
+    if result < 0{
+        return sock::Result::Err("Getresgid Failed")
+    }
+    
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Getresuid(uid_t *ruid,uid_t *euid,uid_t *suid)->sock::Result{
+    i64 result = getresuid(ruid,euid,suid)
+
+    if result < 0{
+        return sock::Result::Err("Getresuid Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Getrlimit(int resource,Rlimit *rlim)->sock::Result{
+    i64 result = getrlimit(resource,rlim)
+
+    if result < 0{
+        return sock::Result::Err("Getrlimit Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Getrusage(int who,Rusage *usage)->sock::Result{
+    i64 result = getrusage(who,usage)
+
+    if result < 0{
+        return sock::Result::Err("Getrusage Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Getsid(pid_t pid)->sock::Result{
+    i64 result = getsid(pid)
+
+    if result < 0{
+        return sock::Result::Err("Getsid Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Gettid()->sock::Result{
+    i64 result = gettid()
+
+    if result < 0{
+        return sock::Result::Err("Gettid Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Getuid()->sock::Result{
+    i64 result = getuid()
+
+    if result < 0{
+        return sock::Result::Err("Getuid Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Kill(pid_t pid,int sig)->sock::Result{
+    i64 result = kill(pid,sig)
+
+    if result < 0{
+        return sock::Result::Err("Kill Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn PidfdGetfd(int pidfd,int targetfd,uint flags)->sock::Result{
+    i64 result = pidfd_getfd(pidfd,targetfd,flags)
+
+    if result < 0{
+        return sock::Result::Err("PidfdGetfd Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn PidfdOpen(pid_t pid,uint flags)->sock::Result{
+    i64 result = pidfd_open(pid,flags)
+
+    if result < 0{
+        return sock::Result::Err("PidfdOpen Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Prctl(int op,ulong arg2,ulong arg3,ulong arg4,ulong arg5)->sock::Result{
+    i64 result = prctl(op,arg2,arg3,arg4,arg5)
+
+    if result < 0{
+        return sock::Result::Err("Prctl Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+fn Prlimit(pid_t pid,int resource,Rlimit *new_limit,Rlimit *old_limit)->sock::Result{
+    i64 result = prlimit(pid,resource,new_limit,old_limit)
+
+    if result < 0{
+        return sock::Result::Err("Prlimit Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn ProcessMadvise(int pidfd,Iovec *iovec,size_t n,int advice,uint flags)->sock::Result{
+    i64 result = process_madvise(pidfd,iovec,n,advice,flags)
+
+    if result < 0{
+        return sock::Result::Err("ProcessMadvise Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Setgid(gid_t gid)->sock::Result{
+    i64 result = setgid(gid)
+
+    if result < 0{
+        return sock::Result::Err("Setgid Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Setgroups(size_t size,gid_t *list)->sock::Result{
+    i64 result = setgroups(size,list)
+
+    if result < 0{
+        return sock::Result::Err("Setgroups Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Initgroups(str user,gid_t group)->sock::Result{
+    i64 result = initgroups(user,group)
+
+    if result < 0{
+        return sock::Result::Err("Initgroups Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Setns(int fd,int nstype)->sock::Result{
+    i64 result = setns(fd,nstype)
+
+    if result < 0{
+        return sock::Result::Err("Setns Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Setpgid(pid_t pid,pid_t pgid)->sock::Result{
+    i64 result = setpgid(pid,pgid)
+
+    if result < 0{
+        return sock::Result::Err("Setpgid Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Setpriority(int which,id_t who,int prio)->sock::Result{
+    i64 result = setpriority(which,who,prio)
+
+    if result < 0{
+        return sock::Result::Err("Setpriority Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Setregid(gid_t rgid,gid_t egid)->sock::Result{
+    i64 result = setregid(rgid,egid)
+
+    if result < 0{
+        return sock::Result::Err("Setregid Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Setresgid(gid_t rgid,gid_t egid,gid_t sgid)->sock::Result{
+    i64 result = setresgid(rgid,egid,sgid)
+
+    if result < 0{
+        return sock::Result::Err("Setresgid Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Setresuid(uid_t ruid,uid_t euid,uid_t suid)->sock::Result{
+    i64 result = setresuid(ruid,euid,suid)
+
+    if result < 0{
+        return sock::Result::Err("Setresuid Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Setreuid(uid_t ruid,uid_t euid)->sock::Result{
+    i64 result = setreuid(ruid,euid)
+
+    if result < 0{
+        return sock::Result::Err("Setreuid Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Setrlimit(int resource,Rlimit *rlim)->sock::Result{
+    i64 result = setrlimit(resource,rlim)
+
+    if result < 0{
+        return sock::Result::Err("Setrlimit Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Setsid()->sock::Result{
+    i64 result = setsid()
+
+    if result < 0{
+        return sock::Result::Err("Setsid Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+// libc doesn't provide a wrapper for it
+fn SetTidAddress(int *tidptr)->sock::Result{
+    i64 result //= set_tid_address(tidptr)
+
+    if result < 0{
+        return sock::Result::Err("SetTidAddress Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+fn Setuid(uid_t uid)->sock::Result{
+    i64 result = setuid(uid)
+
+    if result < 0{
+        return sock::Result::Err("Setuid Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Seteuid(uid_t uid)->sock::Result{
+    i64 result = seteuid(uid)
+
+    if result < 0{
+        return sock::Result::Err("Seteuid Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+fn Setegid(gid_t gid)->sock::Result{
+    i64 result = setegid(gid)
+
+    if result < 0{
+        return sock::Result::Err("Setegid Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+fn Tgkill(pid_t tgid,pid_t tid,int sig)->sock::Result{
+    i64 result = tgkill(tgid,tid,sig)
+
+    if result < 0{
+        return sock::Result::Err("Tgkill Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Unshare(int flags)->sock::Result{
+    i64 result = unshare(flags)
+
+    if result < 0{
+        return sock::Result::Err("Unshare Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn ProcessVmReadv(pid_t pid,Iovec *local_iov,ulong liovcnt,Iovec *remote_iov,ulong riovcnt,ulong flags)->sock::Result{
+    i64 result = process_vm_readv(pid,local_iov,liovcnt,remote_iov,riovcnt,flags)
+
+    if result < 0{
+        return sock::Result::Err("ProcessVmReadv Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn ProcessVmWritev(pid_t pid,Iovec *local_iov,ulong liovcnt,Iovec *remote_iov,ulong riovcnt,ulong flags)->sock::Result{
+    i64 result = process_vm_writev(pid,local_iov,liovcnt,remote_iov,riovcnt,flags)
+
+    if result < 0{
+        return sock::Result::Err("ProcessVmWritev Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Wait(int *status)->sock::Result{
+    i64 result = wait(status)
+
+    if result < 0{
+        return sock::Result::Err("Wait Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Waitpid(pid_t pid,int *status,int options)->sock::Result{
+    i64 result = waitpid(pid,status,options)
+
+    if result < 0{
+        return sock::Result::Err("Waitpid Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Wait4(pid_t pid,int *wstatus,int options,Rusage *rusage)->sock::Result{
+    i64 result = wait4(pid,wstatus,options,rusage)
+
+    if result < 0{
+        return sock::Result::Err("Wait4 Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Wait3(int *wstatus,int options,Rusage *rusage)->sock::Result{
+    i64 result = wait3(wstatus,options,rusage)
+
+    if result < 0{
+        return sock::Result::Err("Wait3 Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn ModifyLdt(int func,void *ptr,ulong bytecount)->sock::Result{
+    i64 result = modify_ldt(func,ptr,bytecount)
+
+    if result < 0{
+        return sock::Result::Err("ModifyLdt Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+// libc doesn't provide a wrapper
+fn Seccomp(uint operation,uint flags,void *args)->sock::Result{
+    i64 result //= seccomp(operation,flags,args)
+
+    if result < 0{
+        return sock::Result::Err("Seccomp Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+// libc doesn't provide a wrapper
+fn Kcmp(pid_t pid1,pid_t pid2,int _type,ulong idx1,ulong idx2)->sock::Result{
+    i64 result //= kcmp(pid1,pid2,_type,idx1,idx2)
+
+    if result < 0{
+        return sock::Result::Err("Kcmp Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Getenv(str name)->sock::Result{
+    str result = getenv(name)
+
+    return sock::Result::Err(result)
+}
+
+
+
+fn Setenv(str name,str value,int overwrite)->sock::Result{
+    i64 result = setenv(name,value,overwrite)
+
+    if result < 0{
+        return sock::Result::Err("Setenv Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Unsetenv(str name)->sock::Result{
+    i64 result = unsetenv(name)
+
+    if result < 0{
+        return sock::Result::Err("Unsetenv Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Clearenv()->sock::Result{
+    i64 result = clearenv()
+
+    if result < 0{
+        return sock::Result::Err("Clearenv Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+fn Times(Tms *buf)->sock::Result{
+    i64 result = times(buf)
+
+    if result < 0{
+        return sock::Result::Err("Times Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+
+
+fn Acct(str acctfile)->sock::Result{
+    i64 result = acct(acctfile)
+
+    if result < 0{
+        return sock::Result::Err("Acct Failed")
+    }
+
+    return sock::Result::Ok(result)
+}
+
+

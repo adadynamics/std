@@ -1,0 +1,71 @@
+
+type uid_t = i32
+type gid_t = i32
+type long  = i64
+type ulong = u64
+
+struct Passwd{
+    str pw_name   // User Name
+    str pw_passwd // User Password
+    uid_t pw_uid  // User ID
+    gid_t pw_gid  // Group ID
+    str pw_gecos  // User Information
+    str pw_dir    // Home Directory
+    str pw_shell  // Shell Program
+}
+
+struct Group{
+    str gr_name   // Group Name
+    str gr_passwd // Group Password
+    gid_t gr_gid  // Group ID
+    str *gr_mem   // Null-terminated array of pointers to group members' names
+}
+
+
+struct Spwd{
+    str sp_namp    // Login Name
+    str sp_pwdp    // Encrypted Password
+    long sp_lstchg // Date of last change,in days since unix epoch
+    long sp_min    // Minimum no. of days between changes
+    long sp_max    // Maximum no. of days between changes
+    long sp_warn   // no. of days before password expires to warn user to change it
+    long sp_inact  // no. of days after password expires until account is disabled
+    long sp_expire // Date when account expires,in days since unix epoch
+    ulong sp_flag  // Reserved
+}
+
+
+foreign "C"{
+    fn getpwnam(str name)->Passwd *
+
+    fn getpwuid(uid_t uid)->Passwd *
+
+    fn getpwent()->Passwd *
+
+    fn setpwent()
+
+    fn endpwent()
+
+    fn getgrnam(str name)->Group *
+
+    fn getgrgid(gid_t gid)->Group *
+
+    fn getgrent()->Group *
+
+    fn setgrent()
+
+    fn endgrent()
+
+    fn getspnam(str name)->Spwd *
+
+    fn getspent()->Spwd *
+
+    fn setspent()
+
+    fn endspent()
+
+    fn crypt(str key,str salt)->str
+
+}
+
+

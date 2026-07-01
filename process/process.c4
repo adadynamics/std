@@ -1,0 +1,110 @@
+use std::libc::process as process
+use std::libc::socket as socket
+
+use std::fs as fs
+
+foreign "C"{
+    fn execve(char *pathName,str *argv,str *envp)->i32
+    fn printf(str fmt,...)->i32
+    fn perror(const char *string)
+}
+
+const u32 TRUE  = 1
+const u32 FALSE = 0
+
+const i32 SIGKILL = 9
+
+struct ExitStatus{
+    i32 code
+}
+
+struct Process{
+    i32 processID
+    u32 running
+}
+
+impl Process{
+    fn Init(){
+        self->processID = -1
+        self->running   = FALSE
+    }
+
+    fn Wait() ->ExitStatus{
+        ExitStatus status
+        status.code = 0
+
+        if self->processID <= 0{
+            return status
+        }
+
+        i32 wstatus = 0
+
+        process::Waitpid(self->processID, &wstatus, 0)
+
+        // portable POSIX-style exit decode (will create macro in the future)
+        status.code   = (wstatus >> 8) & 0xFF
+        self->running = FALSE
+
+        return status
+    }
+
+    fn Kill() -> i32{
+        if self->processID <= 0{
+            return -1
+        }
+
+        socket::Result result = process::Kill(self->processID,SIGKILL)
+
+        match result{
+            socket::Result::Err(err){
+                return -1
+            }
+            socket::Result::Ok(ok){
+                return ok
+            }
+        }
+    }
+}
+
+
+fn Spawn(str path,str *argv,str *envp)->Process{
+    Process process
+    process.Init()
+
+    if path == null{
+        return process
+    }
+
+    i32 processID         = -1
+    socket::Result result = process::Fork()
+
+    match result{
+        socket::Result::Ok(ok){
+            processID = ok
+        }
+    }
+
+    if processID == 0{
+        // child
+        process::Execve(path,argv,envp)
+
+        // only reached if exec fails
+        process::Exit(127)
+    }
+
+    if processID < 0{
+        return process
+    }
+
+    process.processID = processID
+    process.running   = TRUE
+
+    return process
+}
+
+
+
+
+fn SetWorkingDirectory(str name)->socket::Result{
+    return fs::SetCurrentDirectory(name)
+}

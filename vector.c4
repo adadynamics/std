@@ -1,0 +1,67 @@
+use std::libc::memory as memlib
+
+foreign "C"{
+    fn malloc(u64 size)->void *
+    fn memcpy(void *dst,const void *src,u64 size)->void *
+    fn memset(void *dst,i32 c,u64 count)->void *
+    fn printf(char *fmt,...)->i32
+    fn free(void *addr)
+    fn strlen(str string)->u64
+}
+
+
+struct Vector<T>{
+    u64 capacity
+    u64 length
+    T *data
+}
+
+impl Vector{
+    fn Init()->void{
+        self->capacity = 10
+        self->length   = 0
+        self->data     = malloc(sizeof(T) * self->capacity)
+
+        memset(self->data,0,sizeof(T) * self->capacity)
+    }
+
+    fn InitSized(u64 size)->void{
+        self->capacity = size
+        self->length   = 0
+        self->data     = malloc(sizeof(T) * self->capacity)
+
+        memset(self->data,0,sizeof(T) * self->capacity)
+    }
+
+    fn Clear(){
+        //memset(self->data,0,sizeof(T) * self->capacity)
+        self->length = 0
+    }
+
+
+    fn PushBack(T value)->void{
+        if self->length >= self->capacity{
+            u64 capacity = self->capacity * 2
+            T *newData   = malloc(sizeof(T) * capacity)
+
+            memcpy(newData,self->data,sizeof(T) * self->capacity)
+
+            free(self->data)
+
+            self->capacity = capacity
+            self->data     = newData
+
+        }
+
+        self->data[self->length] = value
+        self->length             += 1
+    }
+
+    fn Set(u64 index,T value){
+        self->data[index] = value 
+    }
+
+    fn At(u64 index)->T{
+        return self->data[index]
+    }
+}

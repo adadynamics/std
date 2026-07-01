@@ -1,0 +1,59 @@
+
+type uchar       = u8
+type short       = i16
+type ushort      = u16
+type int         = i32
+type uint        = u32
+type long        = i64
+type ulong       = u64
+type size_t      = u64
+type ssize_t     = i64
+
+struct Sysinfo{
+    long uptime     // Seconds since boot
+    ulong [3]loads  // 1,5 and 15 minute load averages
+    ulong totalram  // Total Usable main memory size
+    ulong freeram   // Available memory size
+    ulong sharedram // Amount of shared memory
+    ulong bufferram // Memory used by buffers
+    ulong totalswap // Total swap space size
+    ulong freeswap  // Swap space still available
+    ushort procs    // Number of current processes
+    ulong totalhigh // Total high memory size
+    ulong freehigh  // Available high memory size
+    uint mem_unit   // Memory unit size in bytes
+
+    // Padding to 64 bytes
+    char [20 - 2 * sizeof(long) - sizeof(int)]_f
+}
+
+
+foreign "C"{
+    fn reboot(int magic,int magic2,int op,void *arg)->int
+
+    fn delete_module(char *name,uint flags)->int
+
+    fn finit_module(int fd,char *param_values,int flags)->int
+
+    fn init_module(void *module_image,ulong len,char *param_value)->int
+
+    //fn kexefile_load(int kernel_fd, int initrd_fd,ulong cmdline_len, char *cmdline,ulong flags)->int
+
+    //fn kexeload(ulong entry,ulong nr_segments,KexecSegment *segments,ulong flags)->int
+
+    fn syslog(int _type,char *bufp,int len)->int
+
+    fn sysinfo(Sysinfo *info)->int
+
+    fn getrandom(void *buf,size_t buflen,uint flags)->int
+
+    fn setdomainname(char *name,size_t len)->int
+
+    fn getdomainname(char *name,size_t len)->int
+
+    fn sethostname(char *name,size_t len)->int
+
+    fn gethostname(char *name,size_t len)->int
+
+}
+

@@ -1,0 +1,174 @@
+use std::libc::memory as memory
+use std::libc::socket as socket
+
+
+const u32 TRUE  = 1
+const u32 FALSE = 0
+
+struct Layout{
+    u64 size
+    u64 alignment
+}
+
+impl Layout{
+    fn Init(u64 size,u64 alignment){
+        self->size      = size
+        self->alignment = alignment
+    }
+
+    fn GetSize()->u64{
+        return self->size
+    }
+
+    
+    fn SetSize(u64 size){
+        self->size = size
+    }
+
+
+    fn GetAlignment()->u64{
+        return self->alignment
+    }
+
+    fn SetAlignment(u64 alignment){
+        self->alignment = alignment
+    }
+}
+
+
+struct BumpAllocator{
+    u64 capacity
+    u64 offset
+    u8 *base
+}
+
+
+impl BumpAllocator{
+    fn Init(u64 capacity)->u32{
+        socket::Result result
+
+        self->capacity = capacity
+        self->offset   = 0
+        self->base     = null
+
+        result = memory::Malloc(capacity)
+
+        match result{
+            socket::Result::Err(err){
+                self->base = err as u8 *
+            }
+        }
+
+        if self->base == null{
+            return FALSE
+        }
+
+        memory::Memset(self->base,0,capacity)
+
+        return TRUE
+    }
+
+    fn Destroy()->u32{
+        if self->base == null{
+            return FALSE
+        }
+
+        memory::Free(self->base)
+
+        self->base     = null
+        self->capacity = 0
+        self->offset   = 0
+
+        return TRUE
+    }
+
+    fn IsPowerOfTwo(u64 value)->u32{
+        return value != 0 && ((value & (value - 1)) == 0)
+    }
+
+    fn CheckedAdd(u64 *dst,u64 lhs,u64 rhs)->u32{
+        if lhs > (0xffffffffffffffff - rhs){
+            return TRUE
+        }
+
+        dst@write(lhs + rhs)
+        return FALSE
+    }
+
+    fn Align(u64 *dst,u64 value,u64 alignment)->u32{
+        if not self->IsPowerOfTwo(alignment){
+            return FALSE
+        }
+
+        u64 mask  = alignment - 1
+        u64 added = 0
+
+        if self->CheckedAdd(&added,value,mask){
+            return FALSE
+        }
+
+        dst@write(added & ~mask)
+        return TRUE
+    }
+
+    fn Reset(){
+        self->offset = 0
+    }
+
+    fn AvailableMemory()->u64{
+        return self->capacity - self->offset
+    }
+
+    fn Alloc(Layout layout)->void *{
+        if self->base == null{
+            return null as void *
+        }
+
+        if layout.GetSize() == 0{
+            return null as void *
+        }
+
+        if not self->IsPowerOfTwo(layout.GetAlignment()){
+            return null as void *
+        }
+
+        u64 currentAddress = 0
+
+        if self->CheckedAdd(&currentAddress,self->base as u64,self->offset){
+            return null as void *
+        }
+
+        u64 alignedAddress = 0
+
+        if not self->Align(&alignedAddress,currentAddress,layout.GetAlignment()){
+            return null as void *
+        }
+
+        if alignedAddress < self->base as u64{
+            return null as void *
+        }
+
+        u64 alignedOffset = alignedAddress - (self->base as u64)
+        u64 newOffset     = 0
+
+        if self->CheckedAdd(&newOffset,alignedOffset,layout.GetSize()){
+            return null as void *
+        }
+
+        if newOffset > self->capacity{
+            return null as void *
+        }
+
+        void *result = (self->base + alignedOffset) as void *
+        self->offset = newOffset
+
+        return result
+    }
+
+    fn AllocType(u64 size,u64 count,u64 alignment)->void *{
+        Layout layout
+        layout.Init(size * count,alignment)
+
+        return self->Alloc(layout)
+    }
+}

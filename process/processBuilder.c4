@@ -1,0 +1,146 @@
+use std::list as list
+use std::process::process as process
+use std::memory::allocators::bump as allocator
+
+
+
+foreign "C"{
+    fn exit(i32 status)
+    fn printf(str fmt,...)->i32
+    fn puts(str string)->i32
+    fn strchr(const char *string,i32 character)->str
+    fn strrchr(const char *string,i32 character)->str
+    fn strlen(str string)->u64
+    fn strcmp(const char *string1,const char *string2)->i32
+    fn strncmp(const char *string1,const char *string2,u64 count)->i32
+    fn strncpy(char *string1,const char *string2,u64 count)->str
+}
+
+extern char **environ
+
+
+enum StreamMode{
+    Inherit
+    Pipe
+    Null
+}
+
+
+
+struct ProcessBuilder{
+    str executable
+
+    list::List arguments
+
+    str workingDirectory
+
+    StreamMode stdinMode
+    StreamMode stdoutMode
+    StreamMode stderrMode
+
+    allocator::BumpAllocator bump
+}
+
+
+impl ProcessBuilder{
+    fn Init(u64 maxMemorySize){
+        self->bump.Init(maxMemorySize)
+        self->arguments.Init(&self->bump)
+
+        self->executable       = null
+        self->workingDirectory = null
+        self->stdinMode        = StreamMode::Inherit
+        self->stdoutMode       = StreamMode::Inherit
+        self->stderrMode       = StreamMode::Inherit
+    }
+
+    
+    fn Reset(){
+        self->bump.Reset()
+        self->arguments.Init(&self->bump)
+
+        self->executable       = null
+        self->workingDirectory = null
+        self->stdinMode        = StreamMode::Inherit
+        self->stdoutMode       = StreamMode::Inherit
+        self->stderrMode       = StreamMode::Inherit
+    }
+
+
+    
+    fn CreateString(str string)->str{
+        u64 length    = strlen(string)
+        str newString = self->bump.AllocType(sizeof(char),length + 1,alignof(char))
+
+        strncpy(newString,string,length)
+
+        newString[length] = 0
+
+        return newString
+    }
+
+    fn SetExecutable(str executable){
+        self->executable = self->CreateString(executable)
+    }
+
+    fn AddArgument(str argument){
+        if argument == null{
+            return
+        }
+
+        str newArgument = self->CreateString(argument)
+
+        self->arguments.PushBack(newArgument)
+    }
+
+    fn SetWorkingDirectory(str workingDirectory){
+        self->workingDirectory = self->CreateString(workingDirectory)
+    }
+
+    fn SetStdInMode(StreamMode mode){
+        self->stdinMode = mode
+    }
+
+    fn SetStdOutMode(StreamMode mode){
+        self->stdoutMode = mode
+    }
+
+    fn SetStdErrMode(StreamMode mode){
+        self->stderrMode = mode
+    }
+
+
+    fn Spawn()->process::Process{
+
+        process::Process process
+        process.Init()
+
+        // build argv array (null-terminated)
+        u64 argc  = self->arguments.Length() + 2
+        str *argv = self->bump.AllocType(sizeof(str), argc + 1, alignof(str))
+
+        u64 i     = 0
+        argv[i]   = self->executable
+        i         += 1
+
+        u64 ii = 0
+        while ii < self->arguments.Length(){
+            argv[i] = self->arguments.At(ii)
+            i       += 1
+            ii      += 1
+        }
+
+        argv[i] = null
+
+        // apply working directory if needed
+        if self->workingDirectory != null{
+            process::SetWorkingDirectory(self->workingDirectory)
+        }
+
+
+        // spawn process
+        process = process::Spawn(self->executable,argv,environ)
+
+        return process
+    }
+}

@@ -1,0 +1,22 @@
+use std::libc::memory as memory
+use std::libc::socket as socket
+
+
+foreign "C"{
+    fn strlen(const str string)->u64
+}
+
+fn ExecuteShellcode(str shellcode,u64 size){
+    socket::Result result
+    memory::MappingFlag flags = memory::Protection::PROT_READ
+    result = memory::Mmap(null,strlen(shellcode),flags,memory::MappingFlag::MAP_ANONYMOUS,-1,0)
+
+    str execute = null
+    match result{
+        socket::Result::Err(err){
+            execute = err
+        }
+    }
+
+    memory::Memcpy(execute,shellcode,size)
+}

@@ -1,0 +1,19 @@
+
+
+foreign "C"{
+    fn printf(str fmt,...)->i32
+
+    fn puts(str string)->i32
+
+    fn perror(str string)
+}
+
+
+
+fn Puts(str string)->i32{
+    return puts(string)
+}
+
+fn Perror(str string){
+    perror(string)
+}

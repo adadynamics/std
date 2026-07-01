@@ -1,0 +1,8 @@
+
+
+
+sum Result{
+    Ok(u32)
+    Err(str)
+}
+

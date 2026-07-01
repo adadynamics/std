@@ -1,0 +1,43 @@
+fn SaturatingAddU32(u32 a,u32 b)->u32{
+    const u32 U32_MAX = 0xffffffff as u32
+
+    if a > (U32_MAX - b){
+        return U32_MAX
+    }
+
+    return a + b
+}
+
+fn SaturatingSubU32(u32 a,u32 b)->u32{
+    if a < b{
+        return 0
+    }
+
+    return a - b
+}
+
+
+fn CheckedAddU32(u32 *result,u32 a,u32 b)->u32{
+    const u32 U32_MAX = 0xffffffff as u32
+
+    if a > U32_MAX - b{
+        return 0
+    }
+
+    result@write(a + b)
+    return 1
+}
+
+
+fn CheckedAddU64(u64 *result,u64 a,u64 b)->u64{
+    const u64 U64_MAX = 0xffffffffffffffff as u64
+
+    if a > U64_MAX - b{
+        return 0
+    }
+
+    result@write(a + b)
+    return 1
+}
+
+

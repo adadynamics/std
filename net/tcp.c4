@@ -1,0 +1,308 @@
+use std::string as string
+use std::libc::socket as sock
+
+
+
+struct IPAddress{
+    string::String ip
+    string::String port
+}
+
+impl IPAddress{
+    fn Init(str ip,str port){
+        self->ip.Init()
+        self->port.Init()
+        self->ip.PushBack(ip)
+        self->port.PushBack(port)
+    }
+}
+
+struct Client{
+    i32 fd
+    IPAddress serverAddress
+}
+
+
+impl Client{
+    fn Init(IPAddress address)->sock::Result{
+        sock::Addrinfo hints
+        sock::Addrinfo *res = null
+
+        hints.ai_flags     = 0
+        hints.ai_family    = 0
+        hints.ai_socktype  = sock::SocketType::SOCK_STREAM
+        hints.ai_protocol  = 0
+        hints.ai_addrlen   = 0
+        hints.ai_addr      = null
+        hints.ai_canonname = null
+        hints.ai_next      = null
+
+        sock::Result result = sock::Getaddrinfo(address.ip.data,address.port.data,&hints,&res)
+
+        match result{
+            sock::Result::Err(err){
+                return sock::Result::Err(err)
+            }
+        }
+
+        result = sock::Socket(res->ai_family,res->ai_socktype,res->ai_protocol)
+
+        match result{
+            sock::Result::Err(err){
+                sock::Freeaddrinfo(res)
+                return sock::Result::Err(err)
+            }
+            sock::Result::Ok(fd){
+                self->fd = fd
+            }
+        }
+
+        result = sock::Connect(self->fd,res->ai_addr,res->ai_addrlen)
+
+        match result{
+            sock::Result::Err(err){
+                sock::Close(self->fd)
+                sock::Freeaddrinfo(res)
+                return sock::Result::Err(err)
+            }
+        }
+
+        self->serverAddress = address
+
+        return sock::Freeaddrinfo(res)
+    }
+    
+
+    fn Send(void *data,u64 length)->sock::Result{
+        if self->fd < 0{
+            return sock::Result::Err("TCPClient not connected")
+        }
+
+        if data == null{
+            return sock::Result::Err("Data was null")
+        }
+
+        if length == 0{
+            return sock::Result::Ok(0)
+        }
+
+        u64 totalSent = 0
+
+        while totalSent < length{
+            sock::Result result = sock::Send(self->fd,(data as u8 *) + totalSent,length - totalSent,0)
+
+            match result{
+                sock::Result::Err(err){
+                    return sock::Result::Err(err)
+                }
+
+                sock::Result::Ok(sent){
+                    if sent == 0{
+                        return sock::Result::Err("Connection closed while sending")
+                    }
+
+                    totalSent += sent
+                }
+            }
+        }
+
+        return sock::Result::Ok(totalSent)
+    }
+
+    fn SendString(string::String message)->sock::Result{
+        return self->Send(message.data,message.length)
+    }
+
+    fn Recv(void *buffer,u64 length)->sock::Result{
+        if self->fd < 0{
+            return sock::Result::Err("TCPClient not connected")
+        }
+
+        if buffer == null{
+            return sock::Result::Err("Buffer was null")
+        }
+
+        if length == 0{
+            return sock::Result::Ok(0)
+        }
+
+        sock::Result result = sock::Recv(self->fd,buffer,length,0)
+
+        match result{
+            sock::Result::Err(err){
+                return sock::Result::Err(err)
+            }
+            sock::Result::Ok(received){
+                if received == 0{
+                    return sock::Result::Err("Connection closed")
+                }
+
+                return sock::Result::Ok(received)
+            }
+        }
+    }
+}
+
+
+struct Server{
+    i32 fd
+    IPAddress address
+}
+
+
+impl Server{
+    fn Listen(IPAddress address,u64 backlog)->sock::Result{
+        sock::Addrinfo hints
+        sock::Addrinfo *res = null
+
+        hints.ai_flags     = sock::AddrInfoFlags::AI_PASSIVE
+        hints.ai_family    = 0
+        hints.ai_socktype  = sock::SocketType::SOCK_STREAM
+        hints.ai_protocol  = 0
+        hints.ai_addrlen   = 0
+        hints.ai_addr      = null
+        hints.ai_canonname = null
+        hints.ai_next      = null
+
+        sock::Result result = sock::Getaddrinfo(address.ip.data,address.port.data,&hints,&res)
+
+        match result{
+            sock::Result::Err(err){
+                return sock::Result::Err(err)
+            }
+        }
+
+        result = sock::Socket(res->ai_family,res->ai_socktype,res->ai_protocol)
+
+        match result{
+            sock::Result::Err(err){
+                sock::Freeaddrinfo(res)
+                return sock::Result::Err(err)
+            }
+            sock::Result::Ok(fd){
+                self->fd = fd
+            }
+        }
+
+        result = sock::Bind(self->fd,res->ai_addr,res->ai_addrlen)
+
+        match result{
+            sock::Result::Err(err){
+                sock::Close(self->fd)
+                sock::Freeaddrinfo(res)
+                return sock::Result::Err(err)
+            }
+        }
+
+        result = sock::Freeaddrinfo(res)
+
+        match result{
+            sock::Result::Err(err){
+                sock::Close(self->fd)
+                return sock::Result::Err(err)
+            }
+        }
+
+        result = sock::Listen(self->fd,backlog)
+
+        match result{
+            sock::Result::Err(err){
+                sock::Close(self->fd)
+                return sock::Result::Err(err)
+            }
+        }
+
+        self->address = address
+
+        return sock::Result::Ok(0)
+    }
+
+    fn Accept()->sock::Result{
+        if self->fd < 0{
+            return sock::Result::Err("Server not listening")
+        }
+
+        return sock::Accept(self->fd,null,null)
+    }
+
+    fn Recv(i32 clientFd,void *buffer,u64 length)->sock::Result{
+        if buffer == null{
+            return sock::Result::Err("Buffer was null")
+        }
+
+        if length == 0{
+            return sock::Result::Ok(0)
+        }
+
+        u64 totalRead = 0
+
+        while totalRead < length{
+            sock::Result result = sock::Recv(clientFd,(buffer as u8 *) + totalRead,length - totalRead,0)
+
+            match result{
+                sock::Result::Err(err){
+                    return sock::Result::Err(err)
+                }
+
+                sock::Result::Ok(received){
+                    if received == 0{
+                        break
+                    }
+
+                    totalRead += received
+                }
+            }
+        }
+
+        return sock::Result::Ok(totalRead)
+    }
+
+    fn Send(i32 clientFd,void *data,u64 length)->sock::Result{
+        if data == null{
+            return sock::Result::Err("Data was null")
+        }
+
+        if length == 0{
+            return sock::Result::Ok(0)
+        }
+
+        u64 totalSent = 0
+
+        while totalSent < length{
+            sock::Result result = sock::Send(clientFd,(data as u8 *) + totalSent,length - totalSent,0)
+
+            match result{
+                sock::Result::Err(err){
+                    return sock::Result::Err(err)
+                }
+                sock::Result::Ok(sent){
+                    if sent == 0{
+                        break
+                    }
+
+                    totalSent += sent
+                }
+            }
+        }
+
+        return sock::Result::Ok(totalSent)
+    }
+
+
+    fn SendString(i32 clientFd,string::String message)->sock::Result{
+        return self->Send(clientFd,message.data,message.length)
+    }
+
+    fn Close()->sock::Result{
+        if self->fd < 0{
+            return sock::Result::Ok(0)
+        }
+
+        return sock::Close(self->fd)
+    }
+
+    
+    fn CloseClient(i32 fd)->sock::Result{
+        return sock::Close(fd)
+    }
+}

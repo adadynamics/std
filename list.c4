@@ -1,0 +1,155 @@
+use std::memory::allocators::bump as allocator
+
+
+const u32 TRUE  = 1
+const u32 FALSE = 0
+
+struct Node{
+    void *data
+    Node *next
+}
+
+
+impl Node{
+    fn Init(void *data,Node *next){
+        self->data = data
+        self->next = next
+    }
+}
+
+struct List{
+    Node *head
+    Node *tail
+
+    u64 len
+
+    allocator::BumpAllocator *bump
+}
+
+
+impl List{
+    fn Init(allocator::BumpAllocator *bump)->u32{
+        self->head = null
+        self->tail = null
+        self->len  = 0
+        self->bump = bump
+
+        return TRUE
+    }
+
+    
+    fn PushBack(void *data)->u32{
+        Node *newNode = self->bump->AllocType(sizeof(Node),1,alignof(Node)) as Node *
+
+        if newNode == null{
+            return FALSE
+        }
+
+        newNode->Init(data,null)
+
+        if self->len <= 0{
+            self->head = newNode
+            self->tail = newNode
+            self->len  += 1
+
+            return TRUE
+        }
+
+        self->tail->next = newNode
+        self->tail       = newNode
+        self->len        += 1
+
+        return TRUE
+    }
+
+    
+    fn PopBack()->u32{
+        Node *tmp   = null
+        Node *toPop = null
+
+        if self->len == 0{
+            return FALSE
+        }
+
+        if self->len == 1{
+            self->head = null
+            self->tail = null
+            self->len  -= 1
+
+            return TRUE
+        }
+
+        tmp = self->head
+
+        while tmp->next != self->tail{
+            tmp = tmp->next
+        }
+
+        toPop = tmp->next
+
+        self->tail       = tmp
+        self->tail->next = null
+        self->len        -= 1
+
+        return TRUE
+    }
+
+    fn PopFront()->u32{
+        Node *tmp = null
+
+        if self->len == 0{
+            return FALSE
+        }
+
+        if self->len == 1{
+            self->head = null
+            self->tail = null
+            self->len  -= 1
+
+            return TRUE
+        }
+
+        tmp        = self->head
+        self->head = self->head->next
+        tmp->next  = null
+        self->len  -= 1
+
+        return TRUE
+    }
+
+    fn At(u64 index)->void *{
+        if self->len <= index{
+            return null as void *
+        }
+
+        Node *tmp = self->head
+
+        u64 ii = 0
+        while ii < index{
+            tmp = tmp->next
+            ii  += 1
+        }
+
+        return tmp->data
+    }
+
+    fn Length()->u64{
+        return self->len
+    }
+
+    fn Clear(){
+        Node *node = self->head
+
+        u64 ii = 0
+        while ii < self->len{
+            Node *next = node->next
+            node       = next
+            ii         += 1
+        }
+
+        self->head = null
+        self->tail = null
+        self->len  = 0
+    }
+}
+
