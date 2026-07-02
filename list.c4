@@ -137,6 +137,13 @@ impl List{
         return self->len
     }
 
+
+    fn SetLength(u64 length){
+        self->len = length
+    }
+
+
+
     fn Clear(){
         Node *node = self->head
 
